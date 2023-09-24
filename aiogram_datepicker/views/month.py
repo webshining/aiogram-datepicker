@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Union
 
-from aiogram.types import CallbackQuery
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base import BaseView
 from ..helpers import merge_list
@@ -25,15 +25,15 @@ class MonthView(BaseView):
 
     def _get_action(self, view: str, action: str, year: int, month: int, day: int) -> InlineKeyboardButton:
         if action in ['prev-year', 'next-year', 'ignore']:
-            return InlineKeyboardButton(self.labels[action],
+            return InlineKeyboardButton(text=self.labels[action],
                                         callback_data=self._get_callback(view, action, year, month, day))
 
         elif action == 'year':
-            return InlineKeyboardButton(self.labels['year'].replace('{year}', str(year)),
+            return InlineKeyboardButton(text=self.labels['year'].replace('{year}', str(year)),
                                         callback_data=self._get_callback('year', 'set-view', year, month, day))
 
         elif action == 'select':
-            return InlineKeyboardButton(self.labels[action],
+            return InlineKeyboardButton(text=self.labels[action],
                                         callback_data=self._get_callback(view, action, year, month, day))
 
         for custom_action in self.custom_actions:
@@ -43,38 +43,40 @@ class MonthView(BaseView):
     def get_markup(self, _date: date = None) -> InlineKeyboardMarkup:
         year, month, day = _date.year, _date.month, _date.day
 
-        markup = InlineKeyboardMarkup(row_width=4)
+        markup = InlineKeyboardBuilder()
 
         markup = self._insert_actions(markup, self.settings['header'], 'month', year, month, day)
 
-        markup.row()
+        builder = InlineKeyboardBuilder()
         for i, month_title in enumerate(self.months, start=1):
-            markup.insert(InlineKeyboardButton(
-                f'{month_title}*' if i == month and not self.select_disabled else month_title,
+            builder.add(InlineKeyboardButton(
+                text=f'{month_title}*' if i == month and not self.select_disabled else month_title,
                 callback_data=self._get_callback('month', 'set-month', year, i, day)
             ))
+        builder.adjust(4)
+        markup.attach(builder)
 
         markup = self._insert_actions(markup, self.settings['footer'], 'month', year, month, day)
 
-        return markup
+        return markup.as_markup()
 
     async def process(self, query: CallbackQuery, action: str, _date: date) -> Union[date, bool]:
         if action == 'set-view':
-            await query.message.edit_reply_markup(self.get_markup(_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(_date))
 
         elif action == 'set-month':
             if self.select_disabled:
                 await self.set_view(query, 'day', _date)
             else:
-                await query.message.edit_reply_markup(self.get_markup(_date))
+                await query.message.edit_reply_markup(reply_markup=self.get_markup(_date))
 
         elif action == 'prev-year':
             prev_date = date(_date.year - 1, _date.month, _date.day)
-            await query.message.edit_reply_markup(self.get_markup(prev_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(prev_date))
 
         elif action == 'next-year':
             next_date = date(_date.year + 1, _date.month, _date.day)
-            await query.message.edit_reply_markup(self.get_markup(next_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(next_date))
 
         elif action == 'select':
             await self.set_view(query, 'day', _date)

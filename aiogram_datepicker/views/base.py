@@ -4,27 +4,24 @@ from typing import Union
 
 from aiogram.types import CallbackQuery
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.callback_data import CallbackData
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from ..callback_data import datepicker_callback
+from ..callback_data import DatepickerCallbackData
 
 
 class BaseView(ABC):
-    _datepicker_callback: CallbackData = datepicker_callback
-
     def _get_callback(self, view: str, action: str, year: int, month: int, day: int) -> str:
-        return self.datepicker_callback.new(view, action, year, month, day)
+        return DatepickerCallbackData(view=view, action=action, year=year, month=month, day=day).pack()
 
     def _insert_actions(self, markup, actions, view, year, month, day):
         if len(actions):
-            markup.row()
+            builder = InlineKeyboardBuilder()
             for action in actions:
                 if isinstance(action, list):
-                    markup.row()
-                    for _action in action:
-                        markup.insert(self._get_action(view, _action, year, month, day))
+                    builder.row(*[self._get_action(view, _action, year, month, day) for _action in action])
                 else:
-                    markup.insert(self._get_action(view, action, year, month, day))
+                    builder.add(self._get_action(view, action, year, month, day))
+            markup.attach(builder)
         return markup
 
     @abstractmethod
@@ -36,7 +33,7 @@ class BaseView(ABC):
         pass
 
     @property
-    def datepicker_callback(self) -> CallbackData:
+    def datepicker_callback(self) -> DatepickerCallbackData:
         return self._datepicker_callback
 
     @abstractmethod

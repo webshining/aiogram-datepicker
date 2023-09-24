@@ -5,14 +5,13 @@ from datetime import datetime, date
 from aiogram import Bot, Dispatcher
 from aiogram.types import InlineKeyboardButton
 from aiogram.types import Message, CallbackQuery
-from aiogram.utils import executor
 
 from aiogram_datepicker import Datepicker, DatepickerSettings, DatepickerCustomAction
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=os.environ['API_TOKEN'])
-dp = Dispatcher(bot, run_tasks_by_default=True)
+dp = Dispatcher()
 
 
 def _get_datepicker_settings():
@@ -21,7 +20,7 @@ def _get_datepicker_settings():
         label: str = 'Today'
 
         def get_action(self, view: str, year: int, month: int, day: int) -> InlineKeyboardButton:
-            return InlineKeyboardButton(self.label,
+            return InlineKeyboardButton(text=self.label,
                                         callback_data=self._get_callback(view, self.action, year, month, day))
 
         async def process(self, query: CallbackQuery, view: str, _date: date) -> bool:
@@ -40,7 +39,7 @@ def _get_datepicker_settings():
         label: str = 'Cancel'
 
         def get_action(self, view: str, year: int, month: int, day: int) -> InlineKeyboardButton:
-            return InlineKeyboardButton(self.label,
+            return InlineKeyboardButton(text=self.label,
                                         callback_data=self._get_callback(view, self.action, year, month, day))
 
         async def process(self, query: CallbackQuery, view: str, _date: date) -> bool:
@@ -65,7 +64,7 @@ def _get_datepicker_settings():
     )
 
 
-@dp.message_handler(state='*')
+@dp.message()
 async def _main(message: Message):
     datepicker = Datepicker(_get_datepicker_settings())
 
@@ -73,7 +72,7 @@ async def _main(message: Message):
     await message.answer('Select a date: ', reply_markup=markup)
 
 
-@dp.callback_query_handler(Datepicker.datepicker_callback.filter())
+@dp.callback_query(Datepicker.datepicker_callback.filter())
 async def _process_datepicker(callback_query: CallbackQuery, callback_data: dict):
     datepicker = Datepicker(_get_datepicker_settings())
 
@@ -85,4 +84,4 @@ async def _process_datepicker(callback_query: CallbackQuery, callback_data: dict
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    dp.run_polling(bot)

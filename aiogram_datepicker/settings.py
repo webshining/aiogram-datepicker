@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Union, List, Dict
 
 from .custom_action import DatepickerCustomAction
@@ -9,23 +9,17 @@ _available_views = ('day', 'month', 'year')
 _default_views = {
     'day': {
         'weekdays_labels': ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-
         'header': ['prev-year', 'days-title', 'next-year'],
-
         'show_weekdays': True,
-
-        'footer': ['prev-month', 'select', 'next-month'],
+        'footer': ['prev-month', 'select', 'next-month']
     },
     'month': {
         'months_labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-
         'header': ['prev-year', 'year', 'next-year'],
-
         'footer': ['select']
     },
     'year': {
         'header': [],
-
         'footer': ['prev-years', 'next-years']
     }
 }
@@ -48,13 +42,15 @@ _default_labels = {
 
 
 class DatepickerSettings:
-    def __init__(self, initial_date: date = datetime.now().date(), initial_view: str = 'day',
+    def __init__(self, initial_date: date = None, initial_view: str = 'day',
                  views: Dict[str, Dict[str, Union[str, List[str], bool]]] = None, labels: Dict[str, str] = None,
                  custom_actions: list[DatepickerCustomAction] = list()):
-        if labels is None:
-            labels = _default_labels
+        if initial_date is None:
+            initial_date = datetime.now().date()
         if views is None:
             views = _default_views
+        if labels is None:
+            labels = _default_labels
 
         self.available_actions = list(_default_labels.keys())
         for custom_action in custom_actions:

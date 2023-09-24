@@ -1,3 +1,9 @@
-from aiogram.utils.callback_data import CallbackData
+from aiogram.filters.callback_data import CallbackData
 
-datepicker_callback = CallbackData('datepicker', 'view', 'action', 'year', 'month', 'day')
+
+class DatepickerCallbackData(CallbackData, prefix="datepicker"):
+    view: str
+    action: str
+    year: int | str
+    month: int | str
+    day: int | str

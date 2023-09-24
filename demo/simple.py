@@ -2,18 +2,17 @@ import logging
 import os
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery
-from aiogram.utils import executor
+from aiogram.types import CallbackQuery, Message
 
 from aiogram_datepicker import Datepicker, DatepickerSettings
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=os.environ['API_TOKEN'])
-dp = Dispatcher(bot, run_tasks_by_default=True)
+dp = Dispatcher()
 
 
-@dp.message_handler(state='*')
+@dp.message()
 async def _main(message: Message):
     datepicker = Datepicker(DatepickerSettings())
 
@@ -22,7 +21,7 @@ async def _main(message: Message):
     await message.answer('Select a date: ', reply_markup=markup)
 
 
-@dp.callback_query_handler(Datepicker.datepicker_callback.filter())
+@dp.callback_query(Datepicker.datepicker_callback.filter())
 async def _process_datepicker(callback_query: CallbackQuery, callback_data: dict):
     datepicker = Datepicker(DatepickerSettings())
 
@@ -34,4 +33,4 @@ async def _process_datepicker(callback_query: CallbackQuery, callback_data: dict
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    dp.run_polling(bot)

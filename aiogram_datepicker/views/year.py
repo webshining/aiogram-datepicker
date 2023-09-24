@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Union
 
-from aiogram.types import CallbackQuery
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base import BaseView
 from ..helpers import merge_list
@@ -24,7 +24,7 @@ class YearView(BaseView):
 
     def _get_action(self, view: str, action: str, year: int, month: int, day: int) -> InlineKeyboardButton:
         if action in ['prev-years', 'next-years', 'ignore']:
-            return InlineKeyboardButton(self.labels[action],
+            return InlineKeyboardButton(text=self.labels[action],
                                         callback_data=self._get_callback(view, action, year, month, day))
 
         for custom_action in self.custom_actions:
@@ -34,32 +34,33 @@ class YearView(BaseView):
     def get_markup(self, _date: date = None, offset: int = 4) -> InlineKeyboardMarkup:
         year, month, day = _date.year, _date.month, _date.day
 
-        markup = InlineKeyboardMarkup(row_width=3)
+        markup = InlineKeyboardBuilder()
 
         markup = self._insert_actions(markup, self.settings['header'], 'year', year, month, day)
 
         markup.row()
         for value in range(year - offset, year + offset + 1):
-            markup.insert(InlineKeyboardButton(
-                f'{value}*' if year == value else str(value),
+            markup.add(InlineKeyboardButton(
+                text=f'{value}*' if year == value else str(value),
                 callback_data=self._get_callback('year', 'set-year', value, month, day)
             ))
+        markup.adjust(3)
 
         markup = self._insert_actions(markup, self.settings['footer'], 'year', year, month, day)
 
-        return markup
+        return markup.as_markup()
 
     async def process(self, query: CallbackQuery, action: str, _date: date) -> Union[date, bool]:
         if action == 'set-view':
-            await query.message.edit_reply_markup(self.get_markup(_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(_date))
 
         elif action == 'prev-years':
             prev_date = date(_date.year - 9, _date.month, _date.day)
-            await query.message.edit_reply_markup(self.get_markup(prev_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(prev_date))
 
         elif action == 'next-years':
             next_date = date(_date.year + 9, _date.month, _date.day)
-            await query.message.edit_reply_markup(self.get_markup(next_date))
+            await query.message.edit_reply_markup(reply_markup=self.get_markup(next_date))
 
         elif action == 'set-year':
             await self.set_view(query, 'month', _date)

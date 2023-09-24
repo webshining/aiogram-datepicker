@@ -11,48 +11,46 @@
 ![aiogram-datepicker-settings](https://i.imgur.com/7Vxfg0R.gif)
 
 ## Simple usage
+
 ```python
 import logging
 import os
-from datetime import datetime
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery
-from aiogram.utils import executor
+from aiogram.types import CallbackQuery, Message
 
 from aiogram_datepicker import Datepicker, DatepickerSettings
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=os.environ['API_TOKEN'])
-dp = Dispatcher(bot, run_tasks_by_default=True)
-
+dp = Dispatcher()
 
 def _get_datepicker_settings():
     return DatepickerSettings() #some settings
 
-
-@dp.message_handler(state='*')
+@dp.message()
 async def _main(message: Message):
     datepicker = Datepicker(_get_datepicker_settings())
 
     markup = datepicker.start_calendar()
+
     await message.answer('Select a date: ', reply_markup=markup)
 
 
-@dp.callback_query_handler(Datepicker.datepicker_callback.filter())
+@dp.callback_query(Datepicker.datepicker_callback.filter())
 async def _process_datepicker(callback_query: CallbackQuery, callback_data: dict):
-    datepicker = Datepicker(_get_datepicker_settings())
+    datepicker = Datepicker(DatepickerSettings())
 
-    date = await datepicker.process(callback_query, callback_data)
-    if date:
-        await callback_query.message.answer(date.strftime('%d/%m/%Y'))
+    _date = await datepicker.process(callback_query, callback_data)
+    if _date:
+        await callback_query.message.answer(_date.strftime('%d/%m/%Y'))
 
     await callback_query.answer()
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    dp.run_polling(bot)
 ```
 
 ## Settings
@@ -72,10 +70,10 @@ DatepickerSettings(
         'month': {
             'months_labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             'header': [
-                        'prev-year', 
+                        'prev-year',
                         ['year', 'select'], #you can separate buttons into groups
                         'next-year'
-                       ], 
+                       ],
             'footer': ['select'],
             #available actions -> prev-year, year, next-year, select, ignore
         },
@@ -105,6 +103,7 @@ DatepickerSettings(
 ```
 
 ## Custom action example
+
 ```python
 from aiogram_datepicker import Datepicker, DatepickerSettings, DatepickerCustomAction
 
@@ -116,7 +115,7 @@ class TodayAction(DatepickerCustomAction):
         """
         Required function
         """
-        return InlineKeyboardButton(self.label,
+        return InlineKeyboardButton(text=self.label,
                                     callback_data=self._get_callback(view, self.action, year, month, day))
 
     async def process(self, query: CallbackQuery, view: str, _date: date) -> bool:
